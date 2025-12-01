@@ -1,4 +1,5 @@
 import re
+import random
 from typing import Dict, Any, List
 from utils.gemini_client import call_agent_with_system_and_user
 from utils.adversarial_prompts import ADVERSARIAL_PROMPTS
@@ -17,7 +18,6 @@ INJECTION_PATTERNS = [
     r"api[_\s]?key",
     r"ignore previous instructions",
 ]
-
 
 # =========================
 # DETECTION LOGIC
@@ -98,36 +98,45 @@ async def run_prompt_injection_attack(state: State) -> State:
 async def red_team_agent(
     target_system_prompt: str,
     attacks: List[Dict[str, Any]] = None,
+    max_attacks: int = 1,  # keep free-tier usage low
 ) -> List[State]:
     """
-    Runs multiple prompt injection attacks against a single target system prompt.
+    Runs prompt injection attacks against a single target system prompt.
     Returns a list of result states.
+
+    max_attacks limits how many attack types are used per run
+    so that demo runs stay within Gemini free-tier limits.
     """
     if attacks is None:
         attacks = ADVERSARIAL_PROMPTS  # use shared library
 
+    attacks = attacks.copy()
+    random.shuffle(attacks)
+    attacks = attacks[:max_attacks]
+
     results: List[State] = []
 
     for attack in attacks:
-        # attack["prompts"] is a list; you can loop over all, but for now take the first
         prompts_list = attack.get("prompts", [])
         if not prompts_list:
             continue
 
-        for prompt in prompts_list:
-            state: State = {
-                "target_agent_prompt": target_system_prompt,
-                "test_prompt": prompt,
-                "original_response": "",
-                "injection_response": "",
-                "attack_type": attack["type"],
-                "injection_detected": False,
-                "confidence_score": 0.0,
-                "vulnerability_score": 0.0,
-            }
+        # For demo, use only the first prompt for this attack type
+        prompt = prompts_list[0]
 
-            final_state = await run_prompt_injection_attack(state)
-            results.append(final_state.copy())
+        state: State = {
+            "target_agent_prompt": target_system_prompt,
+            "test_prompt": prompt,
+            "original_response": "",
+            "injection_response": "",
+            "attack_type": attack["type"],
+            "injection_detected": False,
+            "confidence_score": 0.0,
+            "vulnerability_score": 0.0,
+        }
+
+        final_state = await run_prompt_injection_attack(state)
+        results.append(final_state.copy())
 
     return results
 
@@ -172,7 +181,7 @@ if __name__ == "__main__":
             "Always follow safety and privacy rules."
         )
 
-        results = await red_team_agent(target_system_prompt)
+        results = await red_team_agent(target_system_prompt, max_attacks=1)
         report = generate_report(results)
         print(report)
 

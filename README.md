@@ -182,7 +182,7 @@ The key is automatically loaded by `utils/gemini_client.py` using `python-dotenv
 
 ## 5. How to Run
 
-Because the free tier has strict rate limits, it’s best to run individual agents during development and use the full demo sparingly.[12][11]
+Because the free tier has strict rate limits, the default demo runs only one prompt‑injection attack and one memory‑poisoning probe per scan, so you can safely use run_demo.py; if you increase these parameters, it’s best to run individual agents during development and use the full demo sparingly.[12][11]
 
 ### 5.1 Run full multi‑agent scan (supervisor + evaluation)
 
@@ -363,6 +363,7 @@ AgentShield is designed as a foundation, not a finished product. Some natural ex
 ## 10. Limitations & Future Work
 
 - Uses a **single underlying LLM** (Gemini 2.5‑Flash) both as target simulator and attacker; in production you’d often separate these or attack a real deployed agent.
+- The adversarial library and probe list are larger, but the supervisor and notebook default to small max_attacks / max_probes values for free‑tier usage, and users can increase these parameters if they have higher quotas.
 - Memory poisoning is simulated by context injection rather than a full vector‑DB memory pipeline.
 - MCP client is currently mock‑based; integrating a real MCP server would make the audits more realistic.
 - Rate limits on the free Gemini tier constrain how many attacks can be run in one scan; in production you would:

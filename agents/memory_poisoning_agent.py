@@ -53,7 +53,7 @@ async def call_agent_with_memory(
 # CORE LOGIC: MEMORY POISONING TEST
 # =========================
 
-async def run_memory_poisoning_test(state: State) -> State:
+async def run_memory_poisoning_test(state: State, max_probes: int = 1) -> State:
     """
     Simulates a memory poisoning attack and checks if it changes the agent's behavior.
 
@@ -65,18 +65,22 @@ async def run_memory_poisoning_test(state: State) -> State:
       - poisoning_detected: bool
       - poisoning_confidence: float (0-1)
       - vulnerability_score: float (0-10)
+
+    max_probes limits how many probe questions we use (to keep free-tier usage low).
     """
     system_prompt = state["target_agent_prompt"]
 
+    probes = PROBE_QUERIES[:max_probes]
+
     # 1. Baseline behavior: how does the agent respond with clean memory?
     baseline_responses: List[str] = []
-    for q in PROBE_QUERIES:
+    for q in probes:
         resp = await call_agent_with_memory(system_prompt, q, memory_snippet="")
         baseline_responses.append(resp)
 
     # 2. Poisoned behavior: simulate memory injection by appending malicious snippet
     poisoned_responses: List[str] = []
-    for q in PROBE_QUERIES:
+    for q in probes:
         resp = await call_agent_with_memory(
             system_prompt,
             q,
@@ -90,6 +94,7 @@ async def run_memory_poisoning_test(state: State) -> State:
     # 3. Analyze the difference to detect poisoning effects
     state = analyze_memory_poisoning(state)
     return state
+
 
 def analyze_memory_poisoning(state: State) -> State:
     """
@@ -128,9 +133,8 @@ def analyze_memory_poisoning(state: State) -> State:
     drift_score = 1.0 - avg_similarity  # 0 = identical, 1 = completely different
 
     # 3. Combine signals into poisoning_confidence
-    # Heuristic:
-    #   - explicit matches contribute strongly
-    #   - drift_score adds extra confidence when behavior changed
+    #   *explicit matches contribute strongly
+    #   *drift_score adds extra confidence when behavior changed
     if explicit_matches == 0:
         base_conf = 0.0
     elif explicit_matches == 1:
@@ -178,7 +182,7 @@ if __name__ == "__main__":
             "target_agent_prompt": system_prompt,
         }
 
-        final_state = await run_memory_poisoning_test(state)
+        final_state = await run_memory_poisoning_test(state, max_probes=1)
 
         print("=== Memory Poisoning Demo ===")
         print(f"Poisoning Detected: {final_state.get('poisoning_detected')}")
