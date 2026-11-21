@@ -1,0 +1,32 @@
+name: Bug report
+description: Report a reproducible issue in Agent Shield.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: textarea
+    id: observed
+    attributes:
+      label: What happened?
+      description: Include the observed behavior and relevant error output. Redact credentials and private data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Python and Agent Shield version
+      placeholder: Python 3.x; Agent Shield 0.1.0
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide safe steps or a minimal code example. Do not include real secrets.
+    validations:
+      required: true
