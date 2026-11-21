@@ -14,6 +14,7 @@ Each adapter must call the same core interceptor and must not duplicate policy d
 ## Runtime expansion
 
 - The earlier roadmap also proposed finite-state authorization, invariant verification, and Linux system-call sandboxing. These remain future exploration: v0.1 has no FSM supervisor, formal invariants, or OS-level isolation. If a syscall sandbox is pursued, treat it as a separate platform-specific containment layer rather than a property of the Python interceptor.
+- Resolve the findings from benchmarks/hard_cases.py: hard-link escapes from filesystem roots, non-empty arrays without item validation, and whether network policy should constrain an authority (scheme/host/port) instead of only a hostname.
 - Async interception without a second authorization implementation.
 - Safer filesystem access APIs that mitigate time-of-check/time-of-use races.
 - Network controls that cover resolved addresses, ports, redirects, and socket behavior rather than a declared hostname only.

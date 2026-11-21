@@ -28,6 +28,10 @@ The v0.1 validator handles common request shapes, required fields, extra fields,
 
 The benchmark asks whether the security boundary blocks actions and preserves benign operations. A fixed model would introduce nondeterminism, while a live provider or external service would add network cost and confound enforcement timing. Mock handlers give repeatable side-effect signals. This does not measure a model's resistance to prompt injection or production service performance.
 
+## Why keep a failure-seeking suite?
+
+The ordinary benchmark measures the scenarios the current policy intends to enforce. A separate red-team runner is allowed to exit nonzero when it finds a gap. The current hard suite reproduces two such gaps: path resolution follows path names but does not detect hard links to files outside a root, and array types do not validate their nested elements. It also records that a hostname-only network rule accepts an authority with an alternate port. These results are useful because they distinguish a passing control case from an exposed boundary; a green unit suite alone would hide those assumptions.
+
 ## Questions for future engineering work
 
 - What host and filesystem API can make allowed-file access resistant to concurrent symlink changes?

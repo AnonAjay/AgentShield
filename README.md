@@ -100,7 +100,7 @@ The scanner can inspect a configuration mapping, tool definitions, a source stri
 
 The benchmark catalog includes unauthorized tool invocation, numeric parameter manipulation, path traversal, prompt-injection text leading to an unauthorized proposal, sensitive-file access, unauthorized network destination, missing authorization, and three legitimate operations.
 
-Evaluation definitions are in evaluation/benchmark.py. Attack success means a mock backend recorded an effect. Blocking rate is measured over adversarial attempts; false-positive rate and legitimate completion are measured over legitimate attempts. Enforcement latency includes validation, policy, and in-memory audit event recording; p95 uses nearest-rank. Direct-dispatch latency is included only as a baseline reference.
+Evaluation definitions are in src/agent_shield/evaluation/benchmark.py. Attack success means a mock backend recorded an effect. Blocking rate is measured over adversarial attempts; false-positive rate and legitimate completion are measured over legitimate attempts. Enforcement latency includes validation, policy, and in-memory audit event recording; p95 uses nearest-rank. Direct-dispatch latency is included only as a baseline reference.
 
 Measured run (2026-11-21 UTC): 500 iterations per scenario, 3,500 adversarial attempts and 1,500 legitimate attempts, Python 3.14.2 on Windows 11 x64. The raw report is benchmarks/results/v0.1-local-run.json.
 
@@ -110,11 +110,25 @@ Measured run (2026-11-21 UTC): 500 iterations per scenario, 3,500 adversarial at
 | Blocking rate | Not applicable | 100% (3,500/3,500) |
 | False-positive rate | Not measured for the baseline | 0% (0/1,500) |
 | Legitimate task completion | 100% (1,500/1,500) | 100% (1,500/1,500) |
-| Median dispatch/enforcement latency | 0.0056 ms | 0.1156 ms |
-| p95 dispatch/enforcement latency | 0.4123 ms | 1.5197 ms |
+| Median dispatch/enforcement latency | 0.006 ms | 0.12275 ms |
+| p95 dispatch/enforcement latency | 0.4379 ms | 1.644 ms |
 | Policy bypasses | Not applicable | 0 |
 
 These are actual measurements from the local mock suite, not estimates. The small fixed scenario set, temporary files, in-memory audit sink, and mocked network handler do not model production workloads or live-model behavior. Latency varies by machine and load.
+
+### Hard red-team stress suite
+
+Run the separate failure-seeking suite with:
+
+    python -m benchmarks.hard_cases --output benchmarks/results/hard-red-team-run.json
+
+This command exits with status 1 when it reproduces a vulnerability or scope gap. In the recorded run, it found two vulnerabilities and one policy-scope gap:
+
+- **Hard-link filesystem escape — vulnerable:** a file created outside the allowed root was readable through a hard link inside it. Path resolution does not establish file ownership or inode containment.
+- **Array item validation — vulnerable:** a tool schema declaring only an array type forwarded nested action data because v0.1 does not validate array items.
+- **Alternate network port — scope gap:** the hostname matched, so a URL using port 9443 reached the mock handler. The current rule only compares hostnames.
+
+The same run blocked a hostname lookalike suffix and a Unicode-confusable tool name. The full case-by-case report is benchmarks/results/hard-red-team-run.json. These findings are open hardening work: do not use path-root checks as a boundary against hard-link-capable writers, and do not accept arrays with security-sensitive contents until item validation is implemented.
 
 ## Security boundaries and limitations
 

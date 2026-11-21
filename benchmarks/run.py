@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import platform
 import sys
 import tempfile
@@ -281,7 +280,8 @@ def main() -> None:
     rendered = json.dumps(report, indent=2, sort_keys=True)
     if arguments.output:
         arguments.output.parent.mkdir(parents=True, exist_ok=True)
-        arguments.output.write_text(rendered + os.linesep, encoding="utf-8")
+        with arguments.output.open("w", encoding="utf-8", newline="\n") as stream:
+            stream.write(rendered + "\n")
     print(rendered)
 
 
